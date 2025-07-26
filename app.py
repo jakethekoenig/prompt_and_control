@@ -35,7 +35,10 @@ def execute_game_loop(ui, voice_controller):
         else:
             print("🎉 Game Over!")
 
-        # Schedule async cleanup instead of calling asyncio.run()
+        # Show the game over screen immediately
+        ui.show_game_over(victor=winner)
+
+        # Schedule async cleanup after showing the screen
         def cleanup():
             # Create a new event loop for cleanup since we can't use asyncio.run()
             import asyncio
@@ -46,7 +49,6 @@ def execute_game_loop(ui, voice_controller):
                 loop.run_until_complete(voice_controller.stop_listening())
             finally:
                 loop.close()
-            ui.master.destroy()
 
         # Run cleanup in a separate thread to avoid blocking
         threading.Thread(target=cleanup, daemon=True).start()
@@ -55,7 +57,7 @@ def execute_game_loop(ui, voice_controller):
     ui.update_display()
 
     # Schedule the next move in 2 seconds
-    ui.master.after(2000, lambda: execute_game_loop(ui, voice_controller))
+    ui.master.after(1000, lambda: execute_game_loop(ui, voice_controller))
 
 
 async def async_main():
