@@ -14,7 +14,7 @@ class Direction(Enum):
     RIGHT = (0, 1)
 
     @classmethod
-    def from_str(cls, direction: str) -> Optional['Direction']:
+    def from_str(cls, direction: str) -> Optional["Direction"]:
         """Convert string to Direction enum."""
         direction = direction.lower()
         if direction == "up":
@@ -27,6 +27,7 @@ class Direction(Enum):
             return cls.RIGHT
         else:
             return None
+
 
 class Color(Enum):
     RED = "Red"
@@ -321,6 +322,10 @@ class GameBoard:
 
         # Check for captures after all moves
         captured_pieces = self.check_captures()
+
+        # Check for win condition before removing pieces
+        winner = self.check_first_capture_win(captured_pieces)
+
         for captured_piece in captured_pieces:
             self.remove_piece(captured_piece)
 
@@ -328,7 +333,39 @@ class GameBoard:
             "move_results": move_results,
             "captured_pieces": [p.id for p in captured_pieces],
             "remaining_pieces": len(self.pieces),
+            "winner": winner,
+            "game_over": winner is not None,
         }
+
+    def check_first_capture_win(self, captured_pieces: List[Piece]) -> Optional[Player]:
+        """Check if any side has won by making the first capture.
+
+        Args:
+            captured_pieces: List of pieces that were captured this turn
+
+        Returns:
+            The winning player if someone made a capture, None otherwise
+        """
+        if not captured_pieces:
+            return None
+
+        # Determine who made the capture by looking at the remaining pieces
+        # The side that captured pieces is the one that still has pieces adjacent to where captures occurred
+        for captured_piece in captured_pieces:
+            # Check adjacent positions to the captured piece's last position
+            for adj_row, adj_col in self.get_adjacent_positions(
+                captured_piece.row, captured_piece.col
+            ):
+                adj_piece = self.get_piece_at(adj_row, adj_col)
+                if adj_piece and adj_piece.owner != captured_piece.owner:
+                    # The adjacent piece's owner made the capture
+                    return adj_piece.owner
+
+        # Fallback: if we can't determine from adjacency, return the opposite of the captured piece's owner
+        # This works because only one side can capture pieces in a single turn
+        return (
+            Player.ENEMY if captured_pieces[0].owner == Player.PLAYER else Player.PLAYER
+        )
 
     def get_pieces_by_owner(self, owner: Player) -> List[Piece]:
         """Get all pieces belonging to a specific player."""
@@ -379,3 +416,23 @@ class GameBoard:
                     prompt += piece.to_prompt(player) + " "
             prompt += "\n"
         return prompt.strip()
+
+    def is_game_over(self) -> Tuple[bool, Optional[Player]]:
+        """Check if the game is over due to first capture win condition.
+
+        Returns:
+            Tuple of (is_game_over, winner). If game is over, winner indicates
+            which player won. If game is not over, winner is None.
+        """
+        # If either side has no pieces left, the game could be considered over
+        player_pieces = self.get_pieces_by_owner(Player.PLAYER)
+        enemy_pieces = self.get_pieces_by_owner(Player.ENEMY)
+
+        # In this implementation, the game is only over when someone makes the first capture
+        # This method is primarily for checking if captures have already occurred
+        if len(player_pieces) < 4:  # Started with 4 pieces
+            return True, Player.ENEMY  # Enemy captured first
+        elif len(enemy_pieces) < 4:  # Started with 4 pieces
+            return True, Player.PLAYER  # Player captured first
+
+        return False, None
