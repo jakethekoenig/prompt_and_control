@@ -1,7 +1,6 @@
 import asyncio
 import threading
-from enum import Enum
-from gameboard import GameBoard, Player, Color, Direction
+from gameboard import Player
 from llm import get_llm_proposed_moves
 from ui_display import GameBoardUI
 from async_voice_controller import SimpleAsyncVoiceController
