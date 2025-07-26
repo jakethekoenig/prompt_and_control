@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import Canvas, Label, Frame
+from tkinter import Canvas, Label
 from gameboard import GameBoard, Player, Color, Direction
 from llm import get_llm_proposed_moves
 from transcript_manager import TranscriptManager
@@ -111,11 +111,16 @@ class GameBoardUI:
 
     def show_game_over(self, victor=None):
         """Display a game over screen with victory/defeat image as a transparent overlay."""
+        # Destroy any existing game over frame to prevent stacking
+        if self.game_over_frame:
+            self.game_over_frame.destroy()
+            self.game_over_frame = None
+
         # Don't clear the canvas to keep the final board state visible.
 
         # Create a frame for the game over screen. This will act as an overlay.
         # A smaller, solid-color frame lets the board be seen around it.
-        self.game_over_frame = Frame(self.master, bg="black", bd=2, relief=tk.RAISED)
+        self.game_over_frame = tk.Frame(self.master, bg="black", bd=2, relief=tk.RAISED)
         self.game_over_frame.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
 
         # Determine the message and image based on the victor
@@ -180,10 +185,14 @@ class GameBoardUI:
             image_loaded = False
 
         # Fallback to custom graphics if images couldn't be loaded
-        if not image_loaded and victor is not None:
+        if not image_loaded:
             # Create a canvas for the fallback visual element
             image_canvas = Canvas(
-                self.game_over_frame, width=300, height=150, bg="black", highlightthickness=0
+                self.game_over_frame,
+                width=300,
+                height=150,
+                bg="black",
+                highlightthickness=0,
             )
             image_canvas.pack(pady=10)
 
@@ -221,9 +230,17 @@ class GameBoardUI:
                     image_canvas.create_line(
                         x, 110, x + 4, 120, x + 8, 110, fill="black", width=2
                     )
+            else:
+                # Draw a neutral game piece
+                image_canvas.create_oval(
+                    125, 50, 175, 100, fill="#888888", outline="white", width=3
+                )
+                image_canvas.create_text(
+                    150, 75, text="?", fill="white", font=("Arial", 24, "bold")
+                )
 
         # Create restart/exit buttons
-        button_frame = Frame(self.game_over_frame, bg="black")
+        button_frame = tk.Frame(self.game_over_frame, bg="black")
         button_frame.pack(pady=20)
 
         restart_button = tk.Button(
