@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import Canvas
 from gameboard import GameBoard, Player, Color, Direction
+from llm import get_llm_proposed_moves
 
 
 class GameBoardUI:
@@ -119,11 +120,13 @@ def demo_move_red_piece(ui):
     if red_piece is None:
         print("Demo ended: Red piece not found")
         return
+    ai_selected_moves = get_llm_proposed_moves(ui.game_board, Player.ENEMY, "  ")
 
     # Try to move the red piece up
     move_successful = ui.game_board.execute_turn(
         {
             red_piece.id: Direction.UP,
+            **ai_selected_moves,
         }
     )
 
@@ -142,11 +145,13 @@ def main():
     app = GameBoardUI(root)
 
     # Move the first black piece down and 3 to the right
-    black_piece = get_piece(app.game_board, Player.ENEMY, None)
-    if black_piece:
-        app.game_board.move_piece(black_piece.id, Direction.DOWN)
-        app.game_board.move_piece(black_piece.id, Direction.RIGHT)
-        app.game_board.move_piece(black_piece.id, Direction.RIGHT)
+    # black_piece = get_piece(app.game_board, Player.ENEMY, None)
+    # if black_piece:
+    #     app.game_board.move_piece(black_piece.id, Direction.DOWN)
+    #     app.game_board.move_piece(black_piece.id, Direction.RIGHT)
+    #     app.game_board.move_piece(black_piece.id, Direction.RIGHT)
+
+    # Move the black pieces based on the ai instructions
 
     # Start the demo animation after 1 second
     root.after(1000, lambda: demo_move_red_piece(app))
