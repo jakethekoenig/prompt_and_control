@@ -274,13 +274,10 @@ class GameBoardUI:
             self.game_over_frame.destroy()
             self.game_over_frame = None
 
-        # Reset the game board
+        # Reset the game board using the setter to ensure cell size is recalculated
         from gameboard import GameBoard
 
-        self.game_board = GameBoard()
-
-        # Redraw the board
-        self.draw_board()
+        self.set_gameboard(GameBoard())
 
 
 def get_piece(game_board, player, color):
