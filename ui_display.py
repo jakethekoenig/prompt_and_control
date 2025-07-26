@@ -108,27 +108,25 @@ class GameBoardUI:
         )
 
     def show_game_over(self, victor=None):
-        """Display a game over screen with victory/defeat image."""
-        # Clear the canvas
-        self.canvas.delete("all")
+        """Display a game over screen with victory/defeat image as a transparent overlay."""
+        # Don't clear the canvas to keep the final board state visible.
 
-        # Create a frame for the game over screen
-        game_over_frame = Frame(self.master, bg="black")
-        game_over_frame.place(x=0, y=0, relwidth=1, relheight=1)
+        # Create a frame for the game over screen. This will act as an overlay.
+        # A smaller, solid-color frame lets the board be seen around it.
+        game_over_frame = Frame(self.master, bg="black", bd=2, relief=tk.RAISED)
+        game_over_frame.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
 
         # Determine the message and image based on the victor
+        subtitle_bg = "black"
         if victor == Player.PLAYER:
             message = "🎉 VICTORY! 🎉"
             subtitle = "You made the first capture!"
             message_color = "#00FF00"  # Green for victory
-            # You can add an image here if you have victory image files
-            # victory_image = tk.PhotoImage(file="victory.png")
         elif victor == Player.ENEMY:
             message = "💀 DEFEAT 💀"
             subtitle = "Enemy made the first capture!"
             message_color = "#FF0000"  # Red for defeat
-            # You can add an image here if you have defeat image files
-            # defeat_image = tk.PhotoImage(file="defeat.png")
+            subtitle_bg = "#8B0000"  # Dark red to highlight the defeat condition
         else:
             message = "🎲 GAME OVER 🎲"
             subtitle = "The game has ended"
@@ -138,51 +136,41 @@ class GameBoardUI:
         title_label = Label(
             game_over_frame,
             text=message,
-            font=("Arial", 36, "bold"),
+            font=("Arial", 32, "bold"),
             fg=message_color,
             bg="black",
         )
-        title_label.pack(pady=(100, 20))
+        title_label.pack(pady=(20, 10), padx=20)
 
         # Create subtitle label
         subtitle_label = Label(
-            game_over_frame, text=subtitle, font=("Arial", 18), fg="white", bg="black"
+            game_over_frame,
+            text=subtitle,
+            font=("Arial", 16),
+            fg="white",
+            bg=subtitle_bg,
         )
-        subtitle_label.pack(pady=(0, 50))
+        subtitle_label.pack(pady=(0, 20), padx=10, fill="x", ipady=5)
 
         # Try to load and display actual images
         image_loaded = False
         image_label = None
+        image_path = None
 
         try:
             if victor == Player.PLAYER:
-                # Load YOU_WIN.jpg
                 image_path = "assets/YOU_WIN.jpg"
-                pil_image = Image.open(image_path)
-                # Resize to fit nicely in the UI (adjust size as needed)
-                pil_image = pil_image.resize((400, 250), Image.Resampling.LANCZOS)
-                photo = ImageTk.PhotoImage(pil_image)
-
-                image_label = Label(game_over_frame, image=photo, bg="black")
-                image_label.image = (
-                    photo  # Keep a reference to prevent garbage collection
-                )
-                image_label.pack(pady=20)
-                image_loaded = True
-
             elif victor == Player.ENEMY:
-                # Load YOU_LOSE.jpg
                 image_path = "assets/YOU_LOSE.jpg"
+
+            if image_path:
                 pil_image = Image.open(image_path)
-                # Resize to fit nicely in the UI (adjust size as needed)
-                pil_image = pil_image.resize((400, 250), Image.Resampling.LANCZOS)
+                pil_image = pil_image.resize((300, 180), Image.Resampling.LANCZOS)
                 photo = ImageTk.PhotoImage(pil_image)
 
                 image_label = Label(game_over_frame, image=photo, bg="black")
-                image_label.image = (
-                    photo  # Keep a reference to prevent garbage collection
-                )
-                image_label.pack(pady=20)
+                image_label.image = photo
+                image_label.pack(pady=10)
                 image_loaded = True
 
         except (FileNotFoundError, Exception) as e:
@@ -190,67 +178,51 @@ class GameBoardUI:
             image_loaded = False
 
         # Fallback to custom graphics if images couldn't be loaded
-        if not image_loaded:
+        if not image_loaded and victor is not None:
             # Create a canvas for the fallback visual element
             image_canvas = Canvas(
-                game_over_frame, width=300, height=200, bg="black", highlightthickness=0
+                game_over_frame, width=300, height=150, bg="black", highlightthickness=0
             )
-            image_canvas.pack(pady=20)
+            image_canvas.pack(pady=10)
 
             if victor == Player.PLAYER:
-                # Draw a victory crown/trophy
-                # Trophy base
+                # Draw a victory crown/trophy (adjusted for smaller canvas)
                 image_canvas.create_rectangle(
-                    125, 150, 175, 180, fill="#FFD700", outline="#FFA500", width=2
-                )
-                # Trophy cup
-                image_canvas.create_oval(
-                    100, 100, 200, 160, fill="#FFD700", outline="#FFA500", width=3
-                )
-                # Trophy handles
-                image_canvas.create_oval(
-                    80, 120, 100, 140, fill="", outline="#FFA500", width=3
+                    125, 120, 175, 150, fill="#FFD700", outline="#FFA500", width=2
                 )
                 image_canvas.create_oval(
-                    200, 120, 220, 140, fill="", outline="#FFA500", width=3
+                    100, 70, 200, 130, fill="#FFD700", outline="#FFA500", width=3
                 )
-                # Crown on top
-                points = [150, 80, 140, 100, 160, 100]
+                image_canvas.create_oval(
+                    80, 90, 100, 110, fill="", outline="#FFA500", width=3
+                )
+                image_canvas.create_oval(
+                    200, 90, 220, 110, fill="", outline="#FFA500", width=3
+                )
+                points = [150, 50, 140, 70, 160, 70]
                 image_canvas.create_polygon(
                     points, fill="#FFD700", outline="#FFA500", width=2
                 )
 
             elif victor == Player.ENEMY:
-                # Draw a defeat skull
-                # Skull shape
+                # Draw a defeat skull (adjusted for smaller canvas)
                 image_canvas.create_oval(
-                    110, 80, 190, 150, fill="#CCCCCC", outline="#999999", width=2
+                    110, 50, 190, 120, fill="#CCCCCC", outline="#999999", width=2
                 )
-                # Eye sockets
-                image_canvas.create_oval(125, 100, 140, 120, fill="black")
-                image_canvas.create_oval(160, 100, 175, 120, fill="black")
-                # Nose
+                image_canvas.create_oval(125, 70, 140, 90, fill="black")
+                image_canvas.create_oval(160, 70, 175, 90, fill="black")
                 image_canvas.create_polygon(
-                    [150, 125, 145, 135, 155, 135], fill="black"
+                    [150, 95, 145, 105, 155, 105], fill="black"
                 )
-                # Mouth - zigzag teeth
                 for i in range(6):
                     x = 130 + i * 8
                     image_canvas.create_line(
-                        x, 140, x + 4, 150, x + 8, 140, fill="black", width=2
+                        x, 110, x + 4, 120, x + 8, 110, fill="black", width=2
                     )
-            else:
-                # Draw a neutral game piece
-                image_canvas.create_oval(
-                    125, 100, 175, 150, fill="#888888", outline="white", width=3
-                )
-                image_canvas.create_text(
-                    150, 125, text="?", fill="white", font=("Arial", 24, "bold")
-                )
 
         # Create restart/exit buttons
         button_frame = Frame(game_over_frame, bg="black")
-        button_frame.pack(pady=30)
+        button_frame.pack(pady=20)
 
         restart_button = tk.Button(
             button_frame,
