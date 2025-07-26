@@ -34,6 +34,8 @@ class GameBoardUI:
         # Enemy pieces are all black
         self.enemy_color = "#000000"
 
+        self.game_over_frame = None
+
         self.draw_board()
 
     def set_gameboard(self, game_board):
@@ -113,8 +115,8 @@ class GameBoardUI:
 
         # Create a frame for the game over screen. This will act as an overlay.
         # A smaller, solid-color frame lets the board be seen around it.
-        game_over_frame = Frame(self.master, bg="black", bd=2, relief=tk.RAISED)
-        game_over_frame.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
+        self.game_over_frame = Frame(self.master, bg="black", bd=2, relief=tk.RAISED)
+        self.game_over_frame.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
 
         # Determine the message and image based on the victor
         subtitle_bg = "black"
@@ -134,7 +136,7 @@ class GameBoardUI:
 
         # Create title label
         title_label = Label(
-            game_over_frame,
+            self.game_over_frame,
             text=message,
             font=("Arial", 32, "bold"),
             fg=message_color,
@@ -144,7 +146,7 @@ class GameBoardUI:
 
         # Create subtitle label
         subtitle_label = Label(
-            game_over_frame,
+            self.game_over_frame,
             text=subtitle,
             font=("Arial", 16),
             fg="white",
@@ -168,7 +170,7 @@ class GameBoardUI:
                 pil_image = pil_image.resize((300, 180), Image.Resampling.LANCZOS)
                 photo = ImageTk.PhotoImage(pil_image)
 
-                image_label = Label(game_over_frame, image=photo, bg="black")
+                image_label = Label(self.game_over_frame, image=photo, bg="black")
                 image_label.image = photo
                 image_label.pack(pady=10)
                 image_loaded = True
@@ -181,7 +183,7 @@ class GameBoardUI:
         if not image_loaded and victor is not None:
             # Create a canvas for the fallback visual element
             image_canvas = Canvas(
-                game_over_frame, width=300, height=150, bg="black", highlightthickness=0
+                self.game_over_frame, width=300, height=150, bg="black", highlightthickness=0
             )
             image_canvas.pack(pady=10)
 
@@ -221,7 +223,7 @@ class GameBoardUI:
                     )
 
         # Create restart/exit buttons
-        button_frame = Frame(game_over_frame, bg="black")
+        button_frame = Frame(self.game_over_frame, bg="black")
         button_frame.pack(pady=20)
 
         restart_button = tk.Button(
@@ -250,10 +252,10 @@ class GameBoardUI:
 
     def restart_game(self):
         """Restart the game with a new board."""
-        # Clear any overlay frames
-        for widget in self.master.winfo_children():
-            if isinstance(widget, Frame):
-                widget.destroy()
+        # Clear the game over frame if it exists
+        if self.game_over_frame:
+            self.game_over_frame.destroy()
+            self.game_over_frame = None
 
         # Reset the game board
         from gameboard import GameBoard
