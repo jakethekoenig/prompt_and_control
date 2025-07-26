@@ -7,61 +7,80 @@ from ui_display import GameBoardUI
 from async_voice_controller import SimpleAsyncVoiceController
 import tkinter as tk
 
-def execute_game_loop(ui, voice_controller):
-    """Demo function that moves the red piece up every 2 seconds using voice transcripts."""
-
-    # Get transcripts from voice controller
-    full_transcript = voice_controller.get_full_transcript()
-    prompt = ui.game_board.to_prompt(Player.PLAYER)
-    new_text = ui.transcript.add_message(prompt, full_transcript)
-    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-        # Submit both tasks
-        ai_future = executor.submit(get_llm_proposed_moves, ui.game_board, Player.ENEMY, None)
-        user_future = executor.submit(get_llm_proposed_moves, ui.game_board, Player.PLAYER, ui.transcript.conversation)
+class GameManager:
+    """Manages the game state and provides restart functionality."""
+    
+    def __init__(self):
+        self.ui = None
+        self.voice_controller = None
+        self.game_running = False
         
-        # Get results from both calls
-        ai_selected_moves = ai_future.result()
-        user_selected_moves = user_future.result()
+    def set_components(self, ui, voice_controller):
+        """Set the UI and voice controller components."""
+        self.ui = ui
+        self.voice_controller = voice_controller
+        
+    def start_game_loop(self):
+        """Start or restart the game loop."""
+        self.game_running = True
+        self.execute_game_loop()
+        
+    def stop_game_loop(self):
+        """Stop the current game loop."""
+        self.game_running = False
+        
+    def restart_game(self):
+        """Restart the game - called by the UI restart callback."""
+        print("🔄 Restarting game...")
+        self.start_game_loop()
 
-    # Execute the turn and get results including win condition
-    turn_result = ui.game_board.execute_turn(
-        {
-            **user_selected_moves,
-            **ai_selected_moves,
-        }
-    )
+    def execute_game_loop(self):
+        """Game loop that processes moves and checks for victory conditions."""
+        if not self.game_running:
+            return
 
-    # Check if game is over from the turn result
-    if turn_result.get("game_over", False):
-        winner = turn_result.get("winner")
-        if winner:
-            print(f"🎉 Game Over! {winner.value} wins by first capture!")
-        else:
-            print("🎉 Game Over!")
+        # Get transcripts from voice controller
+        full_transcript = self.voice_controller.get_full_transcript()
+        prompt = self.ui.game_board.to_prompt(Player.PLAYER)
+        new_text = self.ui.transcript.add_message(prompt, full_transcript)
+        
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+            # Submit both tasks
+            ai_future = executor.submit(get_llm_proposed_moves, self.ui.game_board, Player.ENEMY, None)
+            user_future = executor.submit(get_llm_proposed_moves, self.ui.game_board, Player.PLAYER, self.ui.transcript.conversation)
+            
+            # Get results from both calls
+            ai_selected_moves = ai_future.result()
+            user_selected_moves = user_future.result()
 
-        # Show the game over screen immediately
-        ui.show_game_over(victor=winner)
+        # Execute the turn and get results including win condition
+        turn_result = self.ui.game_board.execute_turn(
+            {
+                **user_selected_moves,
+                **ai_selected_moves,
+            }
+        )
 
-        # Schedule async cleanup after showing the screen
-        def cleanup():
-            # Create a new event loop for cleanup since we can't use asyncio.run()
-            import asyncio
+        # Check if game is over from the turn result
+        if turn_result.get("game_over", False):
+            winner = turn_result.get("winner")
+            if winner:
+                print(f"🎉 Game Over! {winner.value} wins by first capture!")
+            else:
+                print("🎉 Game Over!")
 
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            try:
-                loop.run_until_complete(voice_controller.stop_listening())
-            finally:
-                loop.close()
+            # Show the game over screen immediately
+            self.ui.show_game_over(victor=winner)
+            
+            # Stop the game loop
+            self.stop_game_loop()
+            return
 
-        # Run cleanup in a separate thread to avoid blocking
-        threading.Thread(target=cleanup, daemon=True).start()
-        return
+        self.ui.update_display()
 
-    ui.update_display()
-
-    # Schedule the next move in 2 seconds
-    ui.master.after(1000, lambda: execute_game_loop(ui, voice_controller))
+        # Schedule the next move in 1 second if game is still running
+        if self.game_running:
+            self.ui.master.after(1000, lambda: self.execute_game_loop())
 
 
 async def async_main():
@@ -77,9 +96,16 @@ async def async_main():
         # Create tkinter UI in main thread
         root = tk.Tk()
         app = GameBoardUI(root)
+        
+        # Create game manager
+        game_manager = GameManager()
+        game_manager.set_components(app, voice_controller)
+        
+        # Set up the restart callback in the UI
+        app.set_restart_callback(game_manager.restart_game)
 
-        # Start the demo animation after 1 second
-        root.after(200, lambda: execute_game_loop(app, voice_controller))
+        # Start the game loop after a short delay
+        root.after(200, lambda: game_manager.start_game_loop())
 
         root.mainloop()
 

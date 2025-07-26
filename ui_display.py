@@ -15,6 +15,16 @@ class GameBoardUI:
         # Initialize the game board (use provided one or create new)
         self.game_board = game_board if game_board is not None else GameBoard()
         self.transcript = TranscriptManager()
+        
+        # Initialize scoring system
+        self.score = {
+            'wins': 0,
+            'losses': 0,
+            'games_played': 0
+        }
+        
+        # Callback for restarting the game loop
+        self.restart_callback = None
 
         # Create canvas
         self.canvas = Canvas(master, width=500, height=500, bg="white")
@@ -43,6 +53,10 @@ class GameBoardUI:
             500 // self.game_board.size
         )  # Recalculate in case board size changed
         self.draw_board()
+    
+    def set_restart_callback(self, callback):
+        """Set the callback function to restart the game loop."""
+        self.restart_callback = callback
 
     def update_display(self):
         """Refresh the display to show current game board state."""
@@ -109,6 +123,13 @@ class GameBoardUI:
 
     def show_game_over(self, victor=None):
         """Display a game over screen with victory/defeat image."""
+        # Update score based on the result
+        self.score['games_played'] += 1
+        if victor == Player.PLAYER:
+            self.score['wins'] += 1
+        elif victor == Player.ENEMY:
+            self.score['losses'] += 1
+        
         # Clear the canvas
         self.canvas.delete("all")
 
@@ -121,14 +142,10 @@ class GameBoardUI:
             message = "🎉 VICTORY! 🎉"
             subtitle = "You made the first capture!"
             message_color = "#00FF00"  # Green for victory
-            # You can add an image here if you have victory image files
-            # victory_image = tk.PhotoImage(file="victory.png")
         elif victor == Player.ENEMY:
             message = "💀 DEFEAT 💀"
             subtitle = "Enemy made the first capture!"
             message_color = "#FF0000"  # Red for defeat
-            # You can add an image here if you have defeat image files
-            # defeat_image = tk.PhotoImage(file="defeat.png")
         else:
             message = "🎲 GAME OVER 🎲"
             subtitle = "The game has ended"
@@ -148,7 +165,29 @@ class GameBoardUI:
         subtitle_label = Label(
             game_over_frame, text=subtitle, font=("Arial", 18), fg="white", bg="black"
         )
-        subtitle_label.pack(pady=(0, 50))
+        subtitle_label.pack(pady=(0, 20))
+        
+        # Create score display
+        score_text = f"Score: {self.score['wins']} Wins - {self.score['losses']} Losses"
+        score_label = Label(
+            game_over_frame, 
+            text=score_text, 
+            font=("Arial", 16, "bold"), 
+            fg="#FFD700", 
+            bg="black"
+        )
+        score_label.pack(pady=(0, 30))
+        
+        # Games played counter
+        games_text = f"Games Played: {self.score['games_played']}"
+        games_label = Label(
+            game_over_frame, 
+            text=games_text, 
+            font=("Arial", 12), 
+            fg="#CCCCCC", 
+            bg="black"
+        )
+        games_label.pack(pady=(0, 20))
 
         # Try to load and display actual images
         image_loaded = False
@@ -254,7 +293,7 @@ class GameBoardUI:
 
         restart_button = tk.Button(
             button_frame,
-            text="New Game",
+            text="Play Again",
             font=("Arial", 14, "bold"),
             bg="#4CAF50",
             fg="white",
@@ -285,11 +324,17 @@ class GameBoardUI:
 
         # Reset the game board
         from gameboard import GameBoard
-
         self.game_board = GameBoard()
+        
+        # Reset the transcript manager for a fresh conversation
+        self.transcript = TranscriptManager()
 
         # Redraw the board
         self.draw_board()
+        
+        # If a restart callback is set, call it to restart the game loop
+        if self.restart_callback:
+            self.restart_callback()
 
 
 def get_piece(game_board, player, color):
