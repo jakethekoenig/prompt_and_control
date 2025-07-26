@@ -14,6 +14,7 @@ class GameManager:
         self.ui = None
         self.voice_controller = None
         self.game_running = False
+        self.current_after_id = None
         
     def set_components(self, ui, voice_controller):
         """Set the UI and voice controller components."""
@@ -28,10 +29,19 @@ class GameManager:
     def stop_game_loop(self):
         """Stop the current game loop."""
         self.game_running = False
+        # Cancel any pending after callbacks
+        if self.current_after_id:
+            self.ui.master.after_cancel(self.current_after_id)
+            self.current_after_id = None
         
     def restart_game(self):
         """Restart the game - called by the UI restart callback."""
         print("🔄 Restarting game...")
+        
+        # Reset the transcript manager for a fresh conversation
+        from transcript_manager import TranscriptManager
+        self.ui.transcript = TranscriptManager()
+        
         self.start_game_loop()
 
     def execute_game_loop(self):
@@ -80,7 +90,7 @@ class GameManager:
 
         # Schedule the next move in 1 second if game is still running
         if self.game_running:
-            self.ui.master.after(1000, lambda: self.execute_game_loop())
+            self.current_after_id = self.ui.master.after(1000, lambda: self.execute_game_loop())
 
 
 async def async_main():

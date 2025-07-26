@@ -317,20 +317,14 @@ class GameBoardUI:
 
     def restart_game(self):
         """Restart the game with a new board."""
-        # Clear any overlay frames
+        # Clear game over overlay frames (but preserve other frames like sidebars)
         for widget in self.master.winfo_children():
-            if isinstance(widget, Frame):
+            if isinstance(widget, Frame) and widget.cget('bg') == 'black':
                 widget.destroy()
 
-        # Reset the game board
+        # Reset the game board using the existing helper
         from gameboard import GameBoard
-        self.game_board = GameBoard()
-        
-        # Reset the transcript manager for a fresh conversation
-        self.transcript = TranscriptManager()
-
-        # Redraw the board
-        self.draw_board()
+        self.set_gameboard(GameBoard())
         
         # If a restart callback is set, call it to restart the game loop
         if self.restart_callback:
