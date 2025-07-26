@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import Canvas, Label, Frame
 from gameboard import GameBoard, Player, Color, Direction
 from llm import get_llm_proposed_moves
+from transcript_manager import TranscriptManager
 from PIL import Image, ImageTk
 
 
@@ -13,6 +14,7 @@ class GameBoardUI:
 
         # Initialize the game board (use provided one or create new)
         self.game_board = game_board if game_board is not None else GameBoard()
+        self.transcript = TranscriptManager()
 
         # Create canvas
         self.canvas = Canvas(master, width=500, height=500, bg="white")
