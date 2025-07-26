@@ -1,9 +1,19 @@
 [project]
 name = "prompt-and-control"
 version = "0.1.0"
-description = "Add your description here"
+description = "Voice-controlled game using raw audio capture with transcription"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "sounddevice>=0.4.6",
+    "numpy>=1.24.0",
+    "SpeechRecognition>=3.10.0",
     "openai>=1.97.1",
 ]
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = ["main", "voice"]
