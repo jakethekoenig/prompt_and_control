@@ -8,3 +8,4 @@ __pycache__/
 *.pyzw
 *.pyzwz
 *.egg-info
+.env
